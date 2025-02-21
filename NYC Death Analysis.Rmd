@@ -1,0 +1,130 @@
+---
+title: "NYC Open Data Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Required Libraries:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+data <- read.csv("New_York_City_Leading_Causes_of_Death_20240513.csv")
+str(data)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+data$Deaths <- as.numeric(data$Deaths)
+data$Death.Rate <- as.numeric(data$Death.Rate)
+data$Age.Adjusted.Death.Rate <- as.numeric(data$Age.Adjusted.Death.Rate)
+data <- na.omit(data)
+```
+
+
+```{r}
+res <- as.data.frame(table(data$Leading.Cause))
+colnames(res) <- c("Cause_of_Death", "Count")
+res <- res %>%
+  arrange(-Count) %>%
+  head(11)
+res[c(2:11),]
+```
+
+```{r}
+res <- data %>%
+  group_by(Sex) %>%
+  summarise(Death_Rate = mean(Death.Rate, na.rm = T))
+
+# Plot financial loss by organization size
+ggplot(res, aes(x = Sex, y = Death_Rate, fill = Sex)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Death Rate By Gender", 
+       x = "Gender", y = "Avg. Death Rate")  +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+res <- data %>%
+  group_by(Year) %>%
+  summarise(Death_Rate = mean(Death.Rate, na.rm = T))
+
+# Plot financial loss by organization size
+ggplot(res, aes(x = Year, y = Death_Rate)) +
+  geom_line(lwd = 1.2, col = "red") +
+  labs(title = "Average Death Rate Over Time", 
+       x = "Year", y = "Avg. Death Rate")  +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r, warning=FALSE, message=FALSE}
+data %>%
+  filter(!Leading.Cause == "All Other Causes") %>%
+  group_by(Year, Leading.Cause) %>%
+  summarize(count = n()) %>%
+  arrange(Year, desc(count)) %>%
+  mutate(rank = row_number()) %>%
+  filter(rank == 1) %>%
+  select(Year, Leading.Cause)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+data %>%
+  filter(!Leading.Cause == "All Other Causes") %>%
+  group_by(Sex, Leading.Cause) %>%
+  summarize(count = n()) %>%
+  arrange(Sex, desc(count)) %>%
+  mutate(rank = row_number()) %>%
+  filter(rank == 1) %>%
+  select(Sex, Leading.Cause)
+```
+
+```{r, warning=FALSE, message=FALSE}
+data %>%
+  filter(!Leading.Cause == "All Other Causes") %>%
+  group_by(Race.Ethnicity, Leading.Cause) %>%
+  summarize(count = n()) %>%
+  arrange(Race.Ethnicity, desc(count)) %>%
+  mutate(rank = row_number()) %>%
+  filter(rank == 1) %>%
+  select(Race.Ethnicity, Leading.Cause)
+```
+
+```{r}
+res <- data %>%
+  group_by(Race.Ethnicity) %>%
+  summarise(Death_Rate = mean(Death.Rate, na.rm = T))
+
+# Plot financial loss by organization size
+ggplot(res, aes(x = Race.Ethnicity, y = Death_Rate, fill = Race.Ethnicity)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Average Death Rate By Race & Ethnicity", 
+       x = "Race & Ethnicity", y = "Avg. Death Rate")  +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+```{r}
+model_lm <- lm(Death.Rate ~ Sex + Year + Race.Ethnicity,
+               data = data)
+summary(model_lm)
+```
+
+
+
+
+
+
+
